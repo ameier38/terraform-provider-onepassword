@@ -1,43 +1,24 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"strings"
 )
 
-type vaultID string
-type itemID string
+type vaultName string
+type itemName string
 type fieldName string
-type fieldValue string
-type fieldValueResponse string
 type itemResponse []byte
+type fieldMap map[string]string
+type response string
 
 type itemRequest struct {
-	vaultID   vaultID
-	itemID    itemID
-	fieldName fieldName
-}
-
-func (req itemRequest) validate() error {
-	var err error
-	var errStrings []string
-	if req.vaultID == "" {
-		errStrings = append(errStrings, "You must provide a vault UUID using -vault flag.")
-	}
-	if req.itemID == "" {
-		errStrings = append(errStrings, "You must provide a item UUID using -item flag.")
-	}
-	if req.fieldName == "" {
-		errStrings = append(errStrings, "You must provide a field key using -field flag.")
-	}
-	if len(errStrings) > 0 {
-		err = fmt.Errorf(strings.Join(errStrings, "\n"))
-	}
-	return err
+	VaultName vaultName `json:"vaultName"`
+	ItemName  itemName  `json:"itemName"`
 }
 
 type parsedItem struct {
@@ -59,10 +40,12 @@ type itemGetter interface {
 type onePasswordItemGetter struct{}
 
 func (onePasswordItemGetter) getItem(itemReq itemRequest) (itemResponse, error) {
-	vaultArg := fmt.Sprintf("--vault=%s", itemReq.vaultID)
-	opCmd := exec.Command("op", "get", "item", vaultArg, string(itemReq.itemID))
+	vaultArg := fmt.Sprintf("-vault=%s", itemReq.VaultName)
+	itemArg := string(itemReq.ItemName)
+	opCmd := exec.Command("op", "get", "item", vaultArg, itemArg)
 	itemRes, err := opCmd.Output()
 	if err != nil {
+		err = fmt.Errorf("error calling 1Password; make sure you log in with 'iex $(op signin)': %s", err)
 		return itemResponse(""), err
 	}
 	return itemRes, nil
@@ -76,47 +59,65 @@ func (res itemResponse) parse() (parsedItem, error) {
 	return pItem, nil
 }
 
-func (pItem parsedItem) fieldValue(fName fieldName) (fieldValue, error) {
+func (pItem parsedItem) createFieldMap() fieldMap {
+	m := make(fieldMap)
 	for _, field := range pItem.Details.Sections[0].Fields {
-		if field.Key == string(fName) {
-			return fieldValue(field.Value), nil
-		}
+		m[field.Key] = field.Value
 	}
-	return "", fmt.Errorf("could not find field %s", string(fName))
+	return m
 }
 
-func getFieldValueResponse(getter itemGetter, itemReq itemRequest) (fieldValueResponse, error) {
-	emtpyValueRes := fieldValueResponse("")
+func getRequest(input []byte) (itemRequest, error) {
+	itemReq := itemRequest{}
+	if err := json.Unmarshal(input, &itemReq); err != nil {
+		err = fmt.Errorf("error unmarshaling request: %s\n%s", string(input), err)
+		return itemReq, err
+	}
+	return itemReq, nil
+}
+
+func getResponse(getter itemGetter, itemReq itemRequest) (response, error) {
+	emtpyRes := response("")
 	itemRes, err := getter.getItem(itemReq)
 	if err != nil {
-		return emtpyValueRes, err
+		return emtpyRes, err
 	}
 	pItem, err := itemRes.parse()
 	if err != nil {
-		return emtpyValueRes, err
+		return emtpyRes, err
 	}
-	fValue, err := pItem.fieldValue(itemReq.fieldName)
+	m := pItem.createFieldMap()
 	if err != nil {
-		return emtpyValueRes, err
+		return emtpyRes, err
 	}
-	valueRes := fieldValueResponse(fmt.Sprintf(`{"value":"%s"}`, string(fValue)))
-	return valueRes, nil
+	resData, err := json.Marshal(m)
+	if err != nil {
+		return emtpyRes, err
+	}
+	res := response(string(resData))
+	return res, nil
 }
 
 func main() {
-	vaultIDPtr := flag.String("vault", "", "The vault UUID")
-	itemIDPtr := flag.String("item", "", "The item UUID")
-	fieldNamePtr := flag.String("field", "", "The key from which to get the value")
-	flag.Parse()
-	itemReq := itemRequest{vaultID(*vaultIDPtr), itemID(*itemIDPtr), fieldName(*fieldNamePtr)}
-	if err := itemReq.validate(); err != nil {
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadBytes('\n')
+	if err != nil {
+		if err != io.EOF {
+			fmt.Fprintln(os.Stderr, "error reading input:", err)
+			os.Exit(1)
+		}
+	}
+	itemReq, err := getRequest(input)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "invalid request:", err)
+		os.Exit(1)
 	}
 	getter := onePasswordItemGetter{}
-	fieldValueRes, err := getFieldValueResponse(getter, itemReq)
+	res, err := getResponse(getter, itemReq)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error!:", err)
+		os.Exit(1)
 	} else {
-		fmt.Print(fieldValueRes)
+		fmt.Print(res)
 	}
 }
