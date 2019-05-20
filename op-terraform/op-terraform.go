@@ -6,20 +6,41 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
-type VaultID string
-type ItemID string
-type Field string
-type OPItemResponse string
+type vaultID string
+type itemID string
+type fieldName string
+type fieldValue string
+type fieldValueResponse string
+type itemResponse []byte
 
-type OPItemRequest struct {
-	VaultID VaultID
-	ItemID  ItemID
-	Field   Field
+type itemRequest struct {
+	vaultID   vaultID
+	itemID    itemID
+	fieldName fieldName
 }
 
-type OPItem struct {
+func (req itemRequest) validate() error {
+	var err error
+	var errStrings []string
+	if req.vaultID == "" {
+		errStrings = append(errStrings, "You must provide a vault UUID using -vault flag.")
+	}
+	if req.itemID == "" {
+		errStrings = append(errStrings, "You must provide a item UUID using -item flag.")
+	}
+	if req.fieldName == "" {
+		errStrings = append(errStrings, "You must provide a field key using -field flag.")
+	}
+	if len(errStrings) > 0 {
+		err = fmt.Errorf(strings.Join(errStrings, "\n"))
+	}
+	return err
+}
+
+type parsedItem struct {
 	UUID    string `json:"uuid"`
 	Details struct {
 		Sections []struct {
@@ -31,64 +52,71 @@ type OPItem struct {
 	} `json:"details"`
 }
 
-type IOPClient interface {
-	GetItem(OPItemRequest) (OPItemResponse, error)
+type itemGetter interface {
+	getItem(itemRequest) (itemResponse, error)
 }
 
-type OPClient struct{}
+type onePasswordItemGetter struct{}
 
-func (op OPClient) GetItem(vaultID VaultID, itemID ItemID, field Field) {
-	vaultArg := fmt.Sprintf("--vault=%s", vaultID)
-	opCmd := exec.Command("op", "get", "item", vaultArg, itemID)
-	opOut, err := opCmd.Output()
+func (onePasswordItemGetter) getItem(itemReq itemRequest) (itemResponse, error) {
+	vaultArg := fmt.Sprintf("--vault=%s", itemReq.vaultID)
+	opCmd := exec.Command("op", "get", "item", vaultArg, string(itemReq.itemID))
+	itemRes, err := opCmd.Output()
 	if err != nil {
-		fmt.Println("error executing op command:", err)
-		os.Exit(1)
+		return itemResponse(""), err
 	}
-	parsedItem := opItem{}
-	if err := json.Unmarshal(opOut, &parsedItem); err != nil {
-		fmt.Println("could not unmarshal item:", string(opOut))
-		os.Exit(1)
-	}
-	return parsedItem
+	return itemRes, nil
 }
 
-func validateInput(vaultID string, itemID string, field string) (VaultID, ItemID, Field) {
-	if vaultID == "" {
-		fmt.Println("You must provide a vault UUID using -vault flag.")
+func (res itemResponse) parse() (parsedItem, error) {
+	pItem := parsedItem{}
+	if err := json.Unmarshal(res, &pItem); err != nil {
+		return pItem, err
 	}
-	if itemID == "" {
-		fmt.Println("You must provide a item UUID using -item flag.")
-	}
-	if field == "" {
-		fmt.Println("You must provide a field key using -field flag.")
-	}
-	return vaultID, itemID, field
+	return pItem, nil
 }
 
-func parseItem(response OPItemResponse) OPItem {
-}
-
-func getValue(item opItem, field string) string {
-	for _, field := range item.Details.Sections[0].Fields {
-		if field.Key == field {
-			return field.Value
+func (pItem parsedItem) fieldValue(fName fieldName) (fieldValue, error) {
+	for _, field := range pItem.Details.Sections[0].Fields {
+		if field.Key == string(fName) {
+			return fieldValue(field.Value), nil
 		}
 	}
-	return ""
+	return "", fmt.Errorf("could not find field %s", string(fName))
+}
+
+func getFieldValueResponse(getter itemGetter, itemReq itemRequest) (fieldValueResponse, error) {
+	emtpyValueRes := fieldValueResponse("")
+	itemRes, err := getter.getItem(itemReq)
+	if err != nil {
+		return emtpyValueRes, err
+	}
+	pItem, err := itemRes.parse()
+	if err != nil {
+		return emtpyValueRes, err
+	}
+	fValue, err := pItem.fieldValue(itemReq.fieldName)
+	if err != nil {
+		return emtpyValueRes, err
+	}
+	valueRes := fieldValueResponse(fmt.Sprintf(`{"value":"%s"}`, string(fValue)))
+	return valueRes, nil
 }
 
 func main() {
 	vaultIDPtr := flag.String("vault", "", "The vault UUID")
 	itemIDPtr := flag.String("item", "", "The item UUID")
-	fieldPtr := flag.String("field", "", "The key from which to get the value")
+	fieldNamePtr := flag.String("field", "", "The key from which to get the value")
 	flag.Parse()
-	vaultID, itemID, field := validateInput(*vaultIDPtr, *itemIDPtr, *fieldPtr)
-	item := getItem(vaultID, itemID)
-	value := getValue(item, key)
-	if value == "" {
-		fmt.Println("Could not get value.", "Have you logged in with 'iex $(op signin moneylionfinance)'?")
-		os.Exit(1)
+	itemReq := itemRequest{vaultID(*vaultIDPtr), itemID(*itemIDPtr), fieldName(*fieldNamePtr)}
+	if err := itemReq.validate(); err != nil {
+		fmt.Fprintln(os.Stderr, "invalid request:", err)
 	}
-	fmt.Printf(`{"value":"%s"}`, value)
+	getter := onePasswordItemGetter{}
+	fieldValueRes, err := getFieldValueResponse(getter, itemReq)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error!:", err)
+	} else {
+		fmt.Print(fieldValueRes)
+	}
 }
