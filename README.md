@@ -1,4 +1,8 @@
 # op-terraform
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/ameier38/ameier38%2Fop-terraform%2Fop-terraform?key=eyJhbGciOiJIUzI1NiJ9.NWMzMjE0ODA3YTJkOGI3ZjkxMzVhZjlm.WFn4I6XuUDBfWsKEp6LIuG-IlDsT4JCDTjMzeH7kGu8&type=cf-1)]( https://g.codefresh.io/pipelines/op-terraform/builds?filter=trigger:build~Build;pipeline:5ce2933ab66ecb8654fe386b~op-terraform)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ameier38/op-terraform)](https://goreportcard.com/report/github.com/ameier38/op-terraform)
+
+___
 Thin wrapper around the 1Password CLI for use in Terraform.
 
 Based on [this blog post](https://medium.com/@JesseDearing/using-1password-values-in-terraform-71d2e3077380)
