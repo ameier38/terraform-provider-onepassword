@@ -1,0 +1,8 @@
+version: '1.0'
+steps:
+  test_op_terraform:
+    image: golang
+    working_directory: ${{main_clone}}
+    title: Run unit tests
+    commands:
+      - go test
