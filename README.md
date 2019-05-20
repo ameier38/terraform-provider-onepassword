@@ -38,14 +38,14 @@ Restart your shell and check the installation.
 op-terraform --help
 ```
 
-## Usage in shell
-First sign in to 1Password.
+Sign into 1Password.
 ```
 iex $(op signin)
 ```
-> See [1Password CLI docs](https://support.1password.com/command-line-getting-started/) for
-setting up the 1Password CLI.
+> See [1Password CLI docs](https://support.1password.com/command-line-getting-started/) 
+for setting up the 1Password CLI.
 
+## Usage in shell
 Get an item from 1Password.
 ```
 echo '{"vaultName": "test-vault", "itemName": "test-item"}' | op-terraform
