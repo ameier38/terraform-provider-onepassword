@@ -10,4 +10,5 @@ steps:
     working_directory: ${{main_clone}}
     title: Run unit tests
     commands:
+      - go get github.com/stretchr/testify
       - go test
