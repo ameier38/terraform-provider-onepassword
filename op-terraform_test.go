@@ -3,6 +3,8 @@ package main
 import (
 	"io/ioutil"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type mockItemGetter struct{}
@@ -15,28 +17,32 @@ func (mockItemGetter) getItem(itemRequest) (itemResponse, error) {
 	return itemResponse(dat), nil
 }
 
-func TestGetFieldValueResponse(t *testing.T) {
-	tables := []struct {
-		fieldName          string
-		fieldValueResponse string
-	}{
-		{"server", `{"value":"redshift.company.io"}`},
-		{"username", `{"value":"test-user"}`},
-		{"password", `{"value":"test-password"}`},
-		{"schema", `{"value":"development"}`},
+func TestGetRequest(t *testing.T) {
+	input := []byte(`{"vaultName": "test-vault", "itemName": "test-item"}`)
+	actualReq, err := getRequest(input)
+	expectedReq := itemRequest{vaultName("test-vault"), itemName("test-item")}
+	if assert.Nil(t, err) {
+		assert.Equal(t, expectedReq, actualReq, "expectedReq should equal actualReq")
 	}
-	for _, table := range tables {
-		itemReq := itemRequest{vaultID("test-vault"), itemID("test-item"), fieldName(table.fieldName)}
-		getter := mockItemGetter{}
-		fieldValueRes, err := getFieldValueResponse(getter, itemReq)
-		if err != nil {
-			t.Fatalf("Expected err to be nil but got %s", err)
-		}
-		if string(fieldValueRes) != table.fieldValueResponse {
-			t.Errorf(
-				"expectedFieldValueResponse: %s did not match actualFieldValueResponse: %s",
-				string(table.fieldValueResponse),
-				string(fieldValueRes))
-		}
+}
+
+func TestGetResponse(t *testing.T) {
+	expectedResponse := `{
+		"SID": "",
+		"alias": "",
+		"connection options": "",
+		"database": "test-db",
+		"password": "test-password",
+		"port": "5439",
+		"schema": "development",
+		"server": "redshift.company.io",
+		"type": "postgresql",
+		"username": "test-user"
+	}`
+	getter := mockItemGetter{}
+	itemReq := itemRequest{vaultName("test-vault"), itemName("test-item")}
+	actualResponse, err := getResponse(getter, itemReq)
+	if assert.Nil(t, err) {
+		assert.JSONEq(t, expectedResponse, string(actualResponse), "actualResponse should equal expectedResponse")
 	}
 }
