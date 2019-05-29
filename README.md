@@ -85,3 +85,5 @@ resource "kubernetes_secret" "test_secret" {
 - [golang testing](https://golang.org/pkg/testing/)
 - [golang writing unit tests](https://blog.alexellis.io/golang-writing-unit-tests/)
 - [interfaces in testing](https://nathanleclaire.com/blog/2015/10/10/interfaces-and-composition-for-effective-unit-testing-in-golang/)
+- [golang project structure](https://github.com/golang-standards/project-layout)
+- [terraform-provider-external](https://github.com/terraform-providers/terraform-provider-external)
