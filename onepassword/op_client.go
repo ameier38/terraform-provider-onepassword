@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-type subdomain string
-type email string
-type password string
-type secretKey string
-type session string
-type opPath string
 type vaultName string
 type itemName string
 type sectionName string
@@ -22,15 +16,15 @@ type fieldName string
 type fieldValue string
 type itemResponse []byte
 type itemMap map[sectionName]map[fieldName]fieldValue
-type response string
 
-type OnePassClient struct {
-	Subdomain subdomain
-	Email     email
-	Password  password
-	SecretKey secretKey
-	OpPath    opPath
-	Session   session
+// Client : 1Password client
+type Client struct {
+	OpPath    string
+	Subdomain string
+	Email     string
+	Password  string
+	SecretKey string
+	Session   string
 }
 
 type parsedItem struct {
@@ -56,14 +50,8 @@ type authenticator interface {
 
 // Calls the `op signin` command and passes in the password via stdin.
 // usage: op signin <signinaddress> <emailaddress> <secretkey> [--output=raw]
-func (op *OnePassClient) authenticate() error {
-	cmd := exec.Command(
-		string(op.OpPath),
-		"signin",
-		string(op.Subdomain),
-		string(op.Email),
-		string(op.SecretKey),
-		"--output=raw")
+func (op *Client) authenticate() error {
+	cmd := exec.Command(op.OpPath, "signin", op.Subdomain, op.Email, op.SecretKey, "--output=raw")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("Cannot attach to stdin: %s", err)
@@ -78,14 +66,14 @@ func (op *OnePassClient) authenticate() error {
 	if err != nil {
 		return fmt.Errorf("Cannot signin: %s", err)
 	}
-	op.Session = session(output)
+	op.Session = string(output)
 	return nil
 }
 
 // Calls `op get item` command.
 // usage: op get item <item> [--vault=<vault>] [--include-trash]
-func (op OnePassClient) getItem(vault vaultName, item itemName) (itemResponse, error) {
-	sessionArg := fmt.Sprintf("--session=%s", strings.Trim(string(op.Session), "\n"))
+func (op Client) getItem(vault vaultName, item itemName) (itemResponse, error) {
+	sessionArg := fmt.Sprintf("--session=%s", strings.Trim(op.Session, "\n"))
 	vaultArg := fmt.Sprintf("--vault=%s", strings.Trim(string(vault), "\n"))
 	cmd := exec.Command(string(op.OpPath), "get", "item", sessionArg, vaultArg, string(item))
 	res, err := cmd.Output()

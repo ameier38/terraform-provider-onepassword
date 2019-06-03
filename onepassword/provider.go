@@ -1,17 +1,22 @@
 package onepassword
 
 import (
-	"errors"
-	"os/exec"
-	"sync"
+	"fmt"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
 
+// Provider : 1Password Provider
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
+			"op": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("OP_PATH", "op"),
+				Description: "Path to 1Password CLI (i.e, 'op'). Defaults to value of OP_PATH env variable.",
+			},
 			"email": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -34,31 +39,26 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"item": dataSourceItem(),
+			"onepassword_item": dataSourceItem(),
 		},
 		ResourcesMap:  map[string]*schema.Resource{},
-		ConfigureFunc: createOnePassClient,
+		ConfigureFunc: createClient,
 	}
 }
 
 // The interface{} return value of this function is the meta parameter
 // that will be passed into all resource CRUD functions.
 // ref: https://www.terraform.io/docs/plugins/provider.html#configurefunc
-func createOnePassClient(d *schema.ResourceData) (*OnePassClient, error) {
-	opPath, err := exec.LookPath("op")
-	if err != nil {
-		msg = `
-		Could not find 1Password CLI. Please install.
-		See https://support.1password.com/command-line/ for instructions.
-		`
-		return nil, errors.New(msg)
-	}
-	op := &OnePassClient{
+func createClient(d *schema.ResourceData) (interface{}, error) {
+	op := &Client{
+		OpPath:    d.Get("op").(string),
 		Email:     d.Get("email").(string),
 		Password:  d.Get("password").(string),
 		SecretKey: d.Get("secret_key").(string),
 		Subdomain: d.Get("subdomain").(string),
-		OpPath:    opPath,
-		mutex:     &sync.Mutex,
 	}
+	if err := op.authenticate(); err != nil {
+		return nil, fmt.Errorf("could not authenticate 1Password: %s", err)
+	}
+	return op, nil
 }
