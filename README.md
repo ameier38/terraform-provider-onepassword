@@ -1,7 +1,7 @@
 [![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/ameier38/ameier38%2Fterraform-provider-onepassword%2Fterraform-provider-onepassword?branch=master&key=eyJhbGciOiJIUzI1NiJ9.NWMzMjE0ODA3YTJkOGI3ZjkxMzVhZjlm.WFn4I6XuUDBfWsKEp6LIuG-IlDsT4JCDTjMzeH7kGu8&type=cf-1)]( https://g.codefresh.io/pipelines/terraform-provider-onepassword/builds?repoOwner=ameier38&repoName=terraform-provider-onepassword&serviceName=ameier38%2Fterraform-provider-onepassword&filter=trigger:build~Build;branch:master;pipeline:5cf5099a3d8de566d41eda11~terraform-provider-onepassword)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ameier38/terraform-provider-onepassword)](https://goreportcard.com/report/github.com/ameier38/terraform-provider-onepassword)
 
-# 1Password Terraform Provider
+# :lock: 1Password Terraform Provider :unlock:
 Terraform data source (read: READ ONLY) provider for 1Password.
 
 > This provider __does not__ create resources in 1Password. It requires
@@ -55,7 +55,7 @@ vault called 'Development'.
 ![redshift-item](./images/redshift-item.png)
 
 We could then use the item in terraform to create a Kubernetes secret.
-```
+```tf
 data "onepassword_item" "dev_redshift" {
   vault = "Development"
   item = "Redshift"
@@ -77,6 +77,23 @@ resource "kubernetes_secret" "redshift" {
 ```
 > Read more about creating Kubernetes secrets in terraform
 [here](https://www.terraform.io/docs/providers/kubernetes/r/secret.html).
+
+### Caveats
+As of right now, you cannot create a schema with a nested map, which makes it difficult
+to use a 1Password item with multiple sections. The workaround right now is to __only use
+the default section with a blank section name__. 
+
+![default-section](./images/default-section.png)
+
+If you define other sections or add a section name to the default section, __you will
+not be able to access the fields__.
+
+`Elem` documentation ([link](https://godoc.org/github.com/hashicorp/terraform/helper/schema#Schema)):
+```
+// Elem represents the element type. For a TypeMap, it must be a *Schema
+// with a Type that is one of the primitives: TypeString, TypeBool,
+// TypeInt, or TypeFloat.
+```
 
 ## Developement
 
