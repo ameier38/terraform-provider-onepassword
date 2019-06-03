@@ -1,8 +1,8 @@
 [![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/ameier38/ameier38%2Fterraform-provider-onepassword%2Fterraform-provider-onepassword?branch=master&key=eyJhbGciOiJIUzI1NiJ9.NWMzMjE0ODA3YTJkOGI3ZjkxMzVhZjlm.WFn4I6XuUDBfWsKEp6LIuG-IlDsT4JCDTjMzeH7kGu8&type=cf-1)]( https://g.codefresh.io/pipelines/terraform-provider-onepassword/builds?repoOwner=ameier38&repoName=terraform-provider-onepassword&serviceName=ameier38%2Fterraform-provider-onepassword&filter=trigger:build~Build;branch:master;pipeline:5cf5099a3d8de566d41eda11~terraform-provider-onepassword)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ameier38/terraform-provider-onepassword)](https://goreportcard.com/report/github.com/ameier38/terraform-provider-onepassword)
 
-# :lock: 1Password Terraform Provider :unlock:
-Terraform data source (read: READ ONLY) provider for 1Password.
+# 1Password Terraform Provider
+Terraform data source (read: READ ONLY) provider for 1Password :lock:.
 
 > This provider __does not__ create resources in 1Password. It requires
 the user to have a 1Password account and to have created items in 1Password
