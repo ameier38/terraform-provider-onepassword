@@ -3,9 +3,6 @@ package onepassword
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -23,6 +20,7 @@ provider "onepassword" {
 data "onepassword_item" "test" {
 	vault = "test-vault"
 	item = "test-item"
+	section = "Terraform"
 }
 
 output "test_user" {
@@ -34,36 +32,6 @@ output "test_password" {
 }
 `
 
-func getExtension() string {
-	if runtime.GOOS == "windows" {
-		return ".exe"
-	}
-	return ""
-}
-
-func buildMockOnePassword() (string, error) {
-	cmd := exec.Command(
-		"go",
-		"install",
-		"github.com/ameier38/terraform-provider-onepassword/tf-acc-onepassword")
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return "", fmt.Errorf("failed to build mock op program: %s\n%s", err, output)
-	}
-
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		gopath = filepath.Join(os.Getenv("HOME"), "go")
-	}
-
-	programPath := filepath.Join(
-		filepath.SplitList(gopath)[0],
-		"bin",
-		"tf-acc-onepassword"+getExtension())
-
-	return programPath, nil
-}
-
 func TestDataSourceItem(t *testing.T) {
 	progPath, err := buildMockOnePassword()
 	if err != nil {
@@ -73,7 +41,7 @@ func TestDataSourceItem(t *testing.T) {
 	os.Setenv("OP_PATH", progPath)
 
 	resource.UnitTest(t, resource.TestCase{
-		Providers: testProviders,
+		Providers: createTestProviders(),
 		Steps: []resource.TestStep{
 			{
 				Config: testDataSourceItemConfig,
@@ -94,11 +62,11 @@ func TestDataSourceItem(t *testing.T) {
 					}
 
 					if outputs["test_user"].Value != "test-user" {
-						return fmt.Errorf("'test_user' != 'test-user'")
+						return fmt.Errorf("'%s' != 'test-user'", outputs["test_user"].Value)
 					}
 
 					if outputs["test_password"].Value != "test-password" {
-						return fmt.Errorf("'test_password' != 'test-password'")
+						return fmt.Errorf("'%s' != 'test-password'", outputs["test_password"].Value)
 					}
 
 					return nil

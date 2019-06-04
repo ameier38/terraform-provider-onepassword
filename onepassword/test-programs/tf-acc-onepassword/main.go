@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strings"
 )
 
-const mockResponse = `
+const mockItemResponse = `
 {
   "uuid": "test-item",
   "templateUuid": "102",
@@ -98,7 +100,7 @@ const mockResponse = `
           }
         ],
         "name": "",
-        "title": ""
+        "title": "Terraform"
       }
     ]
   },
@@ -116,14 +118,30 @@ const mockResponse = `
 `
 
 func main() {
-	input := bufio.NewReader(os.Stdin)
-	// fake reading in password from stdin
-	if _, err := input.ReadBytes('\n'); err != nil {
-		if err != io.EOF {
-			fmt.Fprintln(os.Stderr, "error reading input:", err)
-			os.Exit(1)
+	reSignIn := regexp.MustCompile(`signin\s.+$`)
+	reGetItem := regexp.MustCompile(`get\sitem\s.+$`)
+	reGetDoc := regexp.MustCompile(`get\sdocument\s.+$`)
+	argsStr := strings.Join(os.Args[1:], " ")
+	switch {
+	case reSignIn.MatchString(argsStr):
+		reader := bufio.NewReader(os.Stdin)
+		_, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err != io.EOF {
+				fmt.Fprintln(os.Stderr, "error reading input:", err)
+				os.Exit(1)
+			}
 		}
+		fmt.Println("test-session")
+		os.Exit(0)
+	case reGetItem.MatchString(argsStr):
+		fmt.Println(mockItemResponse)
+		os.Exit(0)
+	case reGetDoc.MatchString(argsStr):
+		fmt.Print("hello world")
+		os.Exit(0)
+	default:
+		fmt.Fprintln(os.Stderr, "invalid args: ", argsStr)
+		os.Exit(1)
 	}
-	fmt.Println(mockResponse)
-	os.Exit(0)
 }

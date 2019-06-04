@@ -2,8 +2,10 @@ package onepassword
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
+
 const mockItemResponse = `
 {
   "uuid": "test-item",
@@ -95,7 +97,7 @@ const mockItemResponse = `
           }
         ],
         "name": "",
-        "title": ""
+        "title": "Terraform"
       }
     ]
   },
@@ -114,22 +116,22 @@ const mockItemResponse = `
 
 func TestParse(t *testing.T) {
 	res := itemResponse(mockItemResponse)
-	expectedItemMap := itemMap{
-		sectionName(""): map[fieldName]fieldValue{
-			fieldName("type"): fieldValue("postgresql"),
-			fieldName("server"): fieldValue("redshift.company.io"),
-			fieldName("port"): fieldValue("5439"),
-			fieldName("database"): fieldValue("test-db"),
-			fieldName("username"): fieldValue("test-user"),
-			fieldName("password"): fieldValue("test-password"),
-			fieldName("SID"): fieldValue(""),
-			fieldName("alias"): fieldValue(""),
+	expectedSectionMap := sectionMap{
+		sectionName("Terraform"): fieldMap{
+			fieldName("type"):               fieldValue("postgresql"),
+			fieldName("server"):             fieldValue("redshift.company.io"),
+			fieldName("port"):               fieldValue("5439"),
+			fieldName("database"):           fieldValue("test-db"),
+			fieldName("username"):           fieldValue("test-user"),
+			fieldName("password"):           fieldValue("test-password"),
+			fieldName("SID"):                fieldValue(""),
+			fieldName("alias"):              fieldValue(""),
 			fieldName("connection options"): fieldValue(""),
-			fieldName("schema"): fieldValue("development"),
+			fieldName("schema"):             fieldValue("development"),
 		},
 	}
-	actualItemMap, err := res.parse()
+	actualSectionMap, err := res.parseResponse()
 	if assert.Nil(t, err) {
-		assert.Equal(t, expectedItemMap, actualItemMap, "item maps should equal")	
+		assert.Equal(t, expectedSectionMap, actualSectionMap, "section maps should equal")
 	}
 }

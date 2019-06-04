@@ -39,7 +39,8 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"onepassword_item": dataSourceItem(),
+			"onepassword_item":     dataSourceItem(),
+			"onepassword_document": dataSourceDocument(),
 		},
 		ResourcesMap:  map[string]*schema.Resource{},
 		ConfigureFunc: createClient,

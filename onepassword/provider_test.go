@@ -13,12 +13,10 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-var testProvider *schema.Provider
-var testProviders map[string]terraform.ResourceProvider
-
-func init() {
-	testProvider = Provider().(*schema.Provider)
-	testProviders = map[string]terraform.ResourceProvider{
+func createTestProviders() map[string]terraform.ResourceProvider {
+	testProvider := Provider()
+	testProviders := map[string]terraform.ResourceProvider{
 		"onepassword": testProvider,
 	}
+	return testProviders
 }

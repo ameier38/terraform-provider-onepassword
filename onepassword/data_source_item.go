@@ -21,6 +21,12 @@ func dataSourceItem() *schema.Resource {
 				Required:    true,
 				Description: "1Password item to retrieve",
 			},
+			"section": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Section in which fields reside",
+				Default:     "Terraform",
+			},
 			"result": {
 				Type:     schema.TypeMap,
 				Computed: true,
@@ -34,15 +40,16 @@ func dataSourceItemRead(d *schema.ResourceData, meta interface{}) error {
 	op := meta.(*Client)
 	vault := vaultName(d.Get("vault").(string))
 	item := itemName(d.Get("item").(string))
+	section := sectionName(d.Get("section").(string))
 	itemRes, err := op.getItem(vault, item)
 	if err != nil {
 		return err
 	}
-	itemMap, err := itemRes.parse()
+	sectionMap, err := itemRes.parseResponse()
 	if err != nil {
 		return err
 	}
-	result := itemMap[sectionName("")]
+	result := sectionMap[section]
 	d.Set("result", result)
 	d.SetId(time.Now().UTC().String())
 	return nil

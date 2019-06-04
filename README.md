@@ -2,18 +2,29 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ameier38/terraform-provider-onepassword)](https://goreportcard.com/report/github.com/ameier38/terraform-provider-onepassword)
 
 # 1Password Terraform Provider
-Terraform data source (read: READ ONLY) provider for 1Password :lock:.
+Terraform data source (read: READ ONLY) provider for 1Password.
 
 > This provider __does not__ create resources in 1Password. It requires
 the user to have a 1Password account and to have created items in 1Password
 prior to using. If you are interested in managing 1Password items through
 terraform, please check out https://github.com/anasinnyk/terraform-provider-1password.
 
+## Setup
+
+1. Download the 1Password CLI for your system [here](https://1password.com/downloads/command-line/).
+
+2. Install terraform. On Window's you can use `scoop`.
+  ```
+  scoop install terraform
+  ```
+
+3. Download the [latest release](https://github.com/ameier38/terraform-provider-onepassword/releases).
+Add the `terraform-provider-onepassword_vX.Y.Z` file into the plugins directory. On Window's the
+directory is `C:\Users\<user>\AppData\Roaming\terraform.d\plugins\windows_<arch>`.
+> Read more about where to put third-party plugins 
+[here](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins).
+
 ## Usage
-First install terraform. On Window's you can use `scoop`.
-```
-scoop install terraform
-```
 
 Create a variables file `terraform.tfvars` and make sure it is added to 
 your `.gitignore` so you do not expose your 1Password credentials.
@@ -47,17 +58,17 @@ provider "onepassword" {
 }
 ```
 
-Then start using the provider to pull secrets. Let's say we
+Start using the provider to pull secrets. Let's say we
 wanted to create a Kubernetes secret for our Redshift cluster.
-We could create an item in 1Password called 'Redshift' in a
-vault called 'Development'.
+We could create an item in 1Password called 'Redshift' in the
+'Private' vault.
 
 ![redshift-item](./images/redshift-item.png)
 
-We could then use the item in terraform to create a Kubernetes secret.
+We could then create a `onepassword_item` data source to define a Kubernetes secret.
 ```tf
-data "onepassword_item" "dev_redshift" {
-  vault = "Development"
+data "onepassword_item" "prod_redshift" {
+  vault = "Private"
   item = "Redshift"
 }
 
@@ -78,22 +89,30 @@ resource "kubernetes_secret" "redshift" {
 > Read more about creating Kubernetes secrets in terraform
 [here](https://www.terraform.io/docs/providers/kubernetes/r/secret.html).
 
-### Caveats
-As of right now, you cannot create a schema with a nested map, which makes it difficult
-to use a 1Password item with multiple sections. The workaround right now is to __only use
-the default section with a blank section name__. 
+We could also use a document that has been uploaded to 1Password. This is useful for
+certificates or PEM files that are used to connect to services.
 
-![default-section](./images/default-section.png)
+![mongo-cert](./images/mongo-cert.png)
 
-If you define other sections or add a section name to the default section, __you will
-not be able to access the fields__.
+Create a `onepassword_document` data source.
+```tf
+data "onepassword_document" "mongo_cert" {
+  vault = "Private"
+  document = "MongoDB Cert"
+}
 
-`Elem` documentation ([link](https://godoc.org/github.com/hashicorp/terraform/helper/schema#Schema)):
+resource "kubernetes_secret" "mongo_cert" {
+  metadata {
+    name      = "mongo-cert"
+    namespace = "default"
+  }
+
+  data {
+    "mongo-cert" = "${data.onepassword_item.mongo_cert.result}"
+  }
+}
 ```
-// Elem represents the element type. For a TypeMap, it must be a *Schema
-// with a Type that is one of the primitives: TypeString, TypeBool,
-// TypeInt, or TypeFloat.
-```
+> The data source reads the contents of the file as a string.
 
 ## Developement
 
@@ -116,6 +135,30 @@ go test ./onepassword
 ```
 > On macOS or Linux, set the environment variable with `export TF_ACC=true`.
 
+## Building
+Build the package.
+```
+go build
+```
+
+Move the generated program to the terraform plugins directory.
+For example, on Windows you could run the following:
+```
+mv -Force .\terraform-provider-onepassword.exe C:\Users\<user>\AppData\Roaming\terraform.d\plugins\windows_amd64\
+```
+
+### Releasing
+Create a tag.
+```
+git tag -a v0.1.1 -m "Next release"
+git push origin v0.1.1
+```
+
+Create a release.
+```
+goreleaser
+```
+
 ## Contributing
 If you find a :bug: please [create an issue](https://github.com/ameier38/terraform-provider-onepassword/issues)
 and I will try to help resolve. If you would like to improve the library, feel free to
@@ -133,3 +176,4 @@ and I will try to help resolve. If you would like to improve the library, feel f
 - [Creating a Terraform Provider Part 2](https://medium.com/spaceapetech/creating-a-terraform-provider-part-2-1346f89f082c)
 - [Terraform Schemas](https://www.terraform.io/docs/extend/schemas/index.html)
 - [GitHub issue templates](https://github.com/stevemao/github-issue-templates)
+- [goreleaser](https://goreleaser.com/)
