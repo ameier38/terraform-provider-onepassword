@@ -87,7 +87,7 @@ func (res itemResponse) parseResponse() (sectionMap, error) {
 }
 
 // Calls `op get item` command.
-// usage: op get item <item> [--vault=<vault>] [--include-trash]
+// usage: op get item <item> [--vault=<vault>] [--session=<session>]
 func (op Client) getItem(vault vaultName, item itemName) (itemResponse, error) {
 	sessionArg := getArg("session", op.Session)
 	vaultArg := getArg("vault", string(vault))
@@ -102,7 +102,7 @@ func (op Client) getItem(vault vaultName, item itemName) (itemResponse, error) {
 }
 
 // Calls `op get document` command
-// usage: op get document <document> <filename> [--vault=<vault>]
+// usage: op get document <document> [--vault=<vault>] [--session=<session>]
 func (op Client) getDocument(vault vaultName, docName documentName) (documentValue, error) {
 	sessionArg := getArg("session", op.Session)
 	vaultArg := getArg("vault", string(vault))
