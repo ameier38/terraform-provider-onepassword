@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -118,13 +119,12 @@ const mockItemResponse = `
 `
 
 func main() {
-	args := strings.Join(os.Args[1:], " ")
-	matchSignIn, err := regexp.MatchString(`signin`, args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error matching signin: ", err)
-		os.Exit(1)
-	}
-	if matchSignIn {
+	reSignIn := regexp.MustCompile(`signin\s.+$`)
+	reGetItem := regexp.MustCompile(`get\sitem\s.+$`)
+	reGetDoc := regexp.MustCompile(`get\sdocument\s(?:.+?)\s(.+?)\s.+$`)
+	argsStr := strings.Join(os.Args[1:], " ")
+	switch {
+	case reSignIn.MatchString(argsStr):
 		reader := bufio.NewReader(os.Stdin)
 		_, err := reader.ReadBytes('\n')
 		if err != nil {
@@ -133,26 +133,22 @@ func main() {
 				os.Exit(1)
 			}
 		}
+		fmt.Printf("test-session")
 		os.Exit(0)
-	}
-	matchGetItem, err := regexp.MatchString(`get item`, args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error matching get item: ", err)
-		os.Exit(1)
-	}
-	if matchGetItem {
+	case reGetItem.MatchString(argsStr):
 		fmt.Println(mockItemResponse)
 		os.Exit(0)
-	}
-	matchGetDocument, err := regexp.MatchString(`get document`, args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error matching get document: ", err)
+	case reGetDoc.MatchString(argsStr):
+		docPath := reGetDoc.FindStringSubmatch(argsStr)[1]
+		fmt.Fprintln(os.Stderr, "docPath: ", docPath)
+		data := []byte("hello world")
+		if err := ioutil.WriteFile(docPath, data, 0644); err != nil {
+			fmt.Fprintln(os.Stderr, "error creating mock file: ", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	default:
+		fmt.Fprintln(os.Stderr, "invalid args: ", argsStr)
 		os.Exit(1)
 	}
-	if matchGetDocument {
-		fmt.Fprintln(os.Stderr, "fake write document")
-		os.Exit(0)
-	}
-	fmt.Fprintln(os.Stderr, "invalid args: ", args)
-	os.Exit(1)
 }

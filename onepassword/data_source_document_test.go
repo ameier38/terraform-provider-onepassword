@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -42,13 +41,6 @@ func TestDataSourceDocument(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("error creating documents dir: %s", err)
-	}
-
-	docPath := filepath.Join(docDir, "test-doc")
-	data := []byte("hello world")
-
-	if err := ioutil.WriteFile(docPath, data, 0644); err != nil {
-		t.Errorf("error creating mock file: %s", err)
 	}
 
 	defer os.RemoveAll(docDir)

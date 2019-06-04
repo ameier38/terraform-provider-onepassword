@@ -1,6 +1,7 @@
 package onepassword
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -69,9 +70,9 @@ func (op *Client) authenticate() error {
 			log.Println("[Error]", err)
 		}
 	}()
-	output, err := cmd.CombinedOutput()
+	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("Cannot signin: %s", err)
+		return fmt.Errorf("Cannot signin: %s\n%s", err, output)
 	}
 	op.Session = string(output)
 	return nil
@@ -86,25 +87,26 @@ func getArg(key string, value string) string {
 func (op Client) getItem(vault vaultName, item itemName) (itemResponse, error) {
 	sessionArg := getArg("session", op.Session)
 	vaultArg := getArg("vault", string(vault))
-	cmd := exec.Command(string(op.OpPath), "get", "item", string(item), sessionArg, vaultArg)
+	cmd := exec.Command(string(op.OpPath), "get", "item", string(item), vaultArg, sessionArg)
 	res, err := cmd.Output()
 	if err != nil {
-		err = fmt.Errorf("error calling 1Password: %s", err)
+		err = fmt.Errorf("error calling 1Password: %s\n%s", err, res)
 		return itemResponse(""), err
 	}
 	return itemResponse(res), nil
 }
 
 // Calls `op get document` command
-// usage: op get document <document> [--vault=<vault>] > <filename>
+// usage: op get document <document> <filename> [--vault=<vault>]
 func (op Client) getDocument(vault vaultName, docName documentName, docDir documentDir) (documentPath, error) {
 	sessionArg := getArg("session", op.Session)
 	vaultArg := getArg("vault", string(vault))
-	docPath := filepath.Join(string(docDir), string(docName))
-	cmd := exec.Command(string(op.OpPath), "get", "document", string(docName), docPath, sessionArg, vaultArg)
-	err := cmd.Run()
+	encodedDocName := base64.StdEncoding.EncodeToString([]byte(docName))
+	docPath := filepath.Join(string(docDir), encodedDocName)
+	cmd := exec.Command(string(op.OpPath), "get", "document", string(docName), docPath, vaultArg, sessionArg)
+	res, err := cmd.CombinedOutput()
 	if err != nil {
-		err = fmt.Errorf("error calling 1Password: %s", err)
+		err = fmt.Errorf("error calling 1Password: %s\n%s", err, res)
 		return documentPath(""), err
 	}
 	return documentPath(docPath), nil

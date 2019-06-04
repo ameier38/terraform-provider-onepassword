@@ -15,6 +15,12 @@ First install terraform. On Window's you can use `scoop`.
 scoop install terraform
 ```
 
+Download the [latest release](https://github.com/ameier38/terraform-provider-onepassword/releases).
+Add the `terraform-provider-onepassword_vX.Y.Z` file into the plugins directory. On Window's the
+directory is `C:\Users\<user>\AppData\Roaming\terraform.d\plugins\windows_<arch>`.
+> Read more about where to put third-party plugins 
+[here](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins).
+
 Create a variables file `terraform.tfvars` and make sure it is added to 
 your `.gitignore` so you do not expose your 1Password credentials.
 > Learn more about terraform variables [here](https://www.terraform.io/docs/configuration/variables.html).
@@ -78,15 +84,41 @@ resource "kubernetes_secret" "redshift" {
 > Read more about creating Kubernetes secrets in terraform
 [here](https://www.terraform.io/docs/providers/kubernetes/r/secret.html).
 
+We could also use a document that has been uploaded to 1Password. This is useful for
+certificates or PEM files that are used to connect to services.
+
+![mongo-doc](./images/mongo-doc.png)
+
+Just like above, create a data source. The 1Password provider will download
+the file to a temporary directory from which terraform will read using the `file` function.
+The directory is removed once terraform is finished running.
+```tf
+data "onepassword_document" "mongo_cert" {
+  vault = "Private"
+  item = "MongoDB Cert"
+}
+
+resource "kubernetes_secret" "mongo_cert" {
+  metadata {
+    name      = "mongo-cert"
+    namespace = "default"
+  }
+
+  data {
+    "mongo-cert" = "${file("${data.onepassword_item.mongo_cert.path}")}"
+  }
+}
+```
+> Read more about the `file` function [here](https://www.terraform.io/docs/configuration/functions/file.html).
+
 ### Caveats
 As of right now, you cannot create a schema with a nested map, which makes it difficult
 to use a 1Password item with multiple sections. The workaround right now is to __only use
-the default section with a blank section name__. 
+the first section with a blank section name__. 
 
 ![default-section](./images/default-section.png)
 
-If you define other sections or add a section name to the default section, __you will
-not be able to access the fields__.
+If you define other sections with a section name, __you will not be able to access the fields__.
 
 `Elem` documentation ([link](https://godoc.org/github.com/hashicorp/terraform/helper/schema#Schema)):
 ```
@@ -116,6 +148,24 @@ go test ./onepassword
 ```
 > On macOS or Linux, set the environment variable with `export TF_ACC=true`.
 
+## Building
+Build the package.
+```
+go build
+```
+
+### Releasing
+Create a tag.
+```
+git tag -a v0.1.1 -m "Next release"
+git push origin v0.1.1
+```
+
+Run `goreleaser`.
+```
+goreleaser
+```
+
 ## Contributing
 If you find a :bug: please [create an issue](https://github.com/ameier38/terraform-provider-onepassword/issues)
 and I will try to help resolve. If you would like to improve the library, feel free to
@@ -133,3 +183,4 @@ and I will try to help resolve. If you would like to improve the library, feel f
 - [Creating a Terraform Provider Part 2](https://medium.com/spaceapetech/creating-a-terraform-provider-part-2-1346f89f082c)
 - [Terraform Schemas](https://www.terraform.io/docs/extend/schemas/index.html)
 - [GitHub issue templates](https://github.com/stevemao/github-issue-templates)
+- [goreleaser](https://goreleaser.com/)
