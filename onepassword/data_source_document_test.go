@@ -2,7 +2,6 @@ package onepassword
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -24,29 +23,21 @@ data "onepassword_document" "test" {
 }
 
 output "test_doc" {
-	value = "${file("${data.onepassword_document.test.path}")}"
+	value = "${data.onepassword_document.test.result}"
 } 
 `
 
 func TestDataSourceDocument(t *testing.T) {
 	progPath, err := buildMockOnePassword()
-	fmt.Println("progPath: ", progPath)
+
 	if err != nil {
 		t.Errorf("failed to build mock 1Password cli: %s", err)
 	}
 
 	os.Setenv("OP_PATH", progPath)
 
-	docDir, err := ioutil.TempDir("", "documents")
-
-	if err != nil {
-		t.Errorf("error creating documents dir: %s", err)
-	}
-
-	defer os.RemoveAll(docDir)
-
 	resource.UnitTest(t, resource.TestCase{
-		Providers: createTestProviders(docDir),
+		Providers: createTestProviders(),
 		Steps: []resource.TestStep{
 			{
 				Config: testDataSourceDocumentConfig,
@@ -63,7 +54,7 @@ func TestDataSourceDocument(t *testing.T) {
 					}
 
 					if outputs["test_doc"].Value != "hello world" {
-						return fmt.Errorf("'test_doc' != 'hello world'")
+						return fmt.Errorf("'%s' != 'hello world'", outputs["test_doc"].Value)
 					}
 
 					return nil

@@ -6,9 +6,9 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func dataSourceDocument(docDir string) *schema.Resource {
+func dataSourceDocument() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceDocumentRead(docDir),
+		Read: dataSourceDocumentRead,
 
 		Schema: map[string]*schema.Schema{
 			"vault": {
@@ -21,7 +21,7 @@ func dataSourceDocument(docDir string) *schema.Resource {
 				Required:    true,
 				Description: "1Password document to retrieve",
 			},
-			"path": {
+			"result": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -29,17 +29,15 @@ func dataSourceDocument(docDir string) *schema.Resource {
 	}
 }
 
-func dataSourceDocumentRead(docDir string) func(*schema.ResourceData, interface{}) error {
-	return func(d *schema.ResourceData, meta interface{}) error {
-		op := meta.(*Client)
-		vault := vaultName(d.Get("vault").(string))
-		docName := documentName(d.Get("document").(string))
-		docPath, err := op.getDocument(vault, docName, documentDir(docDir))
-		if err != nil {
-			return err
-		}
-		d.Set("path", string(docPath))
-		d.SetId(time.Now().UTC().String())
-		return nil
+func dataSourceDocumentRead(d *schema.ResourceData, meta interface{}) error {
+	op := meta.(*Client)
+	vault := vaultName(d.Get("vault").(string))
+	docName := documentName(d.Get("document").(string))
+	docValue, err := op.getDocument(vault, docName)
+	if err != nil {
+		return err
 	}
+	d.Set("result", string(docValue))
+	d.SetId(time.Now().UTC().String())
+	return nil
 }

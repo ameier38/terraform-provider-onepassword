@@ -20,6 +20,7 @@ provider "onepassword" {
 data "onepassword_item" "test" {
 	vault = "test-vault"
 	item = "test-item"
+	section = "Terraform"
 }
 
 output "test_user" {
@@ -40,7 +41,7 @@ func TestDataSourceItem(t *testing.T) {
 	os.Setenv("OP_PATH", progPath)
 
 	resource.UnitTest(t, resource.TestCase{
-		Providers: createTestProviders(""),
+		Providers: createTestProviders(),
 		Steps: []resource.TestStep{
 			{
 				Config: testDataSourceItemConfig,
@@ -61,11 +62,11 @@ func TestDataSourceItem(t *testing.T) {
 					}
 
 					if outputs["test_user"].Value != "test-user" {
-						return fmt.Errorf("'test_user' != 'test-user'")
+						return fmt.Errorf("'%s' != 'test-user'", outputs["test_user"].Value)
 					}
 
 					if outputs["test_password"].Value != "test-password" {
-						return fmt.Errorf("'test_password' != 'test-password'")
+						return fmt.Errorf("'%s' != 'test-password'", outputs["test_password"].Value)
 					}
 
 					return nil

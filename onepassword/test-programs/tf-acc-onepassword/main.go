@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -101,7 +100,7 @@ const mockItemResponse = `
           }
         ],
         "name": "",
-        "title": ""
+        "title": "Terraform"
       }
     ]
   },
@@ -121,7 +120,7 @@ const mockItemResponse = `
 func main() {
 	reSignIn := regexp.MustCompile(`signin\s.+$`)
 	reGetItem := regexp.MustCompile(`get\sitem\s.+$`)
-	reGetDoc := regexp.MustCompile(`get\sdocument\s(?:.+?)\s(.+?)\s.+$`)
+	reGetDoc := regexp.MustCompile(`get\sdocument\s.+$`)
 	argsStr := strings.Join(os.Args[1:], " ")
 	switch {
 	case reSignIn.MatchString(argsStr):
@@ -133,19 +132,13 @@ func main() {
 				os.Exit(1)
 			}
 		}
-		fmt.Printf("test-session")
+		fmt.Println("test-session")
 		os.Exit(0)
 	case reGetItem.MatchString(argsStr):
 		fmt.Println(mockItemResponse)
 		os.Exit(0)
 	case reGetDoc.MatchString(argsStr):
-		docPath := reGetDoc.FindStringSubmatch(argsStr)[1]
-		fmt.Fprintln(os.Stderr, "docPath: ", docPath)
-		data := []byte("hello world")
-		if err := ioutil.WriteFile(docPath, data, 0644); err != nil {
-			fmt.Fprintln(os.Stderr, "error creating mock file: ", err)
-			os.Exit(1)
-		}
+		fmt.Print("hello world")
 		os.Exit(0)
 	default:
 		fmt.Fprintln(os.Stderr, "invalid args: ", argsStr)

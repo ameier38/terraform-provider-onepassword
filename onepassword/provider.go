@@ -8,7 +8,7 @@ import (
 )
 
 // Provider : 1Password Provider
-func Provider(docDir string) terraform.ResourceProvider {
+func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"op": {
@@ -40,7 +40,7 @@ func Provider(docDir string) terraform.ResourceProvider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"onepassword_item":     dataSourceItem(),
-			"onepassword_document": dataSourceDocument(docDir),
+			"onepassword_document": dataSourceDocument(),
 		},
 		ResourcesMap:  map[string]*schema.Resource{},
 		ConfigureFunc: createClient,
