@@ -2,7 +2,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ameier38/terraform-provider-onepassword)](https://goreportcard.com/report/github.com/ameier38/terraform-provider-onepassword)
 
 # 1Password Terraform Provider
-Terraform data source (read: READ ONLY) provider for 1Password :lock:.
+Terraform data source (read: READ ONLY) provider for 1Password.
 
 > This provider __does not__ create resources in 1Password. It requires
 the user to have a 1Password account and to have created items in 1Password

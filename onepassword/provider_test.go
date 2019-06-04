@@ -8,17 +8,15 @@ import (
 )
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := Provider("").(*schema.Provider).InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
-var testProvider *schema.Provider
-var testProviders map[string]terraform.ResourceProvider
-
-func init() {
-	testProvider = Provider().(*schema.Provider)
-	testProviders = map[string]terraform.ResourceProvider{
+func createTestProviders(docDir string) map[string]terraform.ResourceProvider {
+	testProvider := Provider(docDir)
+	testProviders := map[string]terraform.ResourceProvider{
 		"onepassword": testProvider,
 	}
+	return testProviders
 }

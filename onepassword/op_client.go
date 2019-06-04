@@ -6,11 +6,14 @@ import (
 	"io"
 	"log"
 	"os/exec"
-	"strings"
+	"path/filepath"
 )
 
 type vaultName string
 type itemName string
+type documentDir string
+type documentName string
+type documentPath string
 type sectionName string
 type fieldName string
 type fieldValue string
@@ -44,6 +47,10 @@ type itemGetter interface {
 	getItem(vaultName, itemName) (itemResponse, error)
 }
 
+type documentGetter interface {
+	getDocument(vaultName, itemName, documentDir)
+}
+
 type authenticator interface {
 	authenticate() error
 }
@@ -70,18 +77,37 @@ func (op *Client) authenticate() error {
 	return nil
 }
 
+func getArg(key string, value string) string {
+	return fmt.Sprintf("--%s=%s", key, value)
+}
+
 // Calls `op get item` command.
 // usage: op get item <item> [--vault=<vault>] [--include-trash]
 func (op Client) getItem(vault vaultName, item itemName) (itemResponse, error) {
-	sessionArg := fmt.Sprintf("--session=%s", strings.Trim(op.Session, "\n"))
-	vaultArg := fmt.Sprintf("--vault=%s", strings.Trim(string(vault), "\n"))
-	cmd := exec.Command(string(op.OpPath), "get", "item", sessionArg, vaultArg, string(item))
+	sessionArg := getArg("session", op.Session)
+	vaultArg := getArg("vault", string(vault))
+	cmd := exec.Command(string(op.OpPath), "get", "item", string(item), sessionArg, vaultArg)
 	res, err := cmd.Output()
 	if err != nil {
 		err = fmt.Errorf("error calling 1Password: %s", err)
 		return itemResponse(""), err
 	}
 	return itemResponse(res), nil
+}
+
+// Calls `op get document` command
+// usage: op get document <document> [--vault=<vault>] > <filename>
+func (op Client) getDocument(vault vaultName, docName documentName, docDir documentDir) (documentPath, error) {
+	sessionArg := getArg("session", op.Session)
+	vaultArg := getArg("vault", string(vault))
+	docPath := filepath.Join(string(docDir), string(docName))
+	cmd := exec.Command(string(op.OpPath), "get", "document", string(docName), docPath, sessionArg, vaultArg)
+	err := cmd.Run()
+	if err != nil {
+		err = fmt.Errorf("error calling 1Password: %s", err)
+		return documentPath(""), err
+	}
+	return documentPath(docPath), nil
 }
 
 func (res itemResponse) parse() (itemMap, error) {
