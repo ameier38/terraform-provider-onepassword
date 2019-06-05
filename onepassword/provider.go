@@ -2,6 +2,7 @@ package onepassword
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -57,6 +58,7 @@ func createClient(d *schema.ResourceData) (interface{}, error) {
 		Password:  d.Get("password").(string),
 		SecretKey: d.Get("secret_key").(string),
 		Subdomain: d.Get("subdomain").(string),
+		mutex:     &sync.Mutex{},
 	}
 	if err := op.authenticate(); err != nil {
 		return nil, fmt.Errorf("could not authenticate 1Password: %s", err)
