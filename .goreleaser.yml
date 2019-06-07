@@ -8,6 +8,7 @@ builds:
       - darwin
       - linux
       - windows
+    binary: 'terraform-provider-onepassword_v{{ .Version }}'
 archives:
   - replacements:
       darwin: Darwin
