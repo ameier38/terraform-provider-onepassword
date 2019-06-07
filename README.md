@@ -19,8 +19,10 @@ terraform, please check out https://github.com/anasinnyk/terraform-provider-1pas
   ```
 
 3. Download the [latest release](https://github.com/ameier38/terraform-provider-onepassword/releases).
-Add the `terraform-provider-onepassword_vX.Y.Z` file into the plugins directory. On Window's the
-directory is `C:\Users\<user>\AppData\Roaming\terraform.d\plugins\windows_<arch>`.
+Add the `terraform-provider-onepassword_vX.Y.Z` file into the plugins directory. 
+  - On Window's, it's `%APPDATA%\terraform.d\plugins\windows_amd64`
+  - On Mac, it's `~/.terraform.d/plugins/darwin_amd64`
+  - On Linux, it's `~/.terraform.d/plugins/linux_amd64`
 > Read more about where to put third-party plugins 
 [here](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins).
 
